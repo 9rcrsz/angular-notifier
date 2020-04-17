@@ -7,23 +7,22 @@ import { Subject } from 'rxjs/Subject';
  *
  * This class describes the structure of a notifiction, including all information it needs to live, and everyone else needs to work with it.
  */
-var NotifierNotification = (function () {
+class NotifierNotification {
     /**
      * Constructor
      *
      * @param {?} options
      */
-    function NotifierNotification(options) {
+    constructor(options) {
         Object.assign(this, options);
         // If not set manually, we have to create a unique notification ID by ourselves. The ID generation relies on the current browser
         // datetime in ms, in praticular the moment this notification gets constructed. Concurrency, and thus two IDs being the exact same,
         // is not possible due to the action queue concept.
         if (options.id === undefined) {
-            this.id = "ID_" + new Date().getTime();
+            this.id = `ID_${new Date().getTime()}`;
         }
     }
-    return NotifierNotification;
-}());
+}
 
 /**
  * Notifier queue service
@@ -36,11 +35,11 @@ var NotifierNotification = (function () {
  * Technical sidenote:
  * An action looks pretty similar to the ones within the Flux / Redux pattern.
  */
-var NotifierQueueService = (function () {
+class NotifierQueueService {
     /**
      * Constructor
      */
-    function NotifierQueueService() {
+    constructor() {
         this.actionStream = new Subject();
         this.actionQueue = [];
         this.isActionInProgress = false;
@@ -51,38 +50,37 @@ var NotifierQueueService = (function () {
      * @param {?} action
      * @return {?}
      */
-    NotifierQueueService.prototype.push = function (action) {
+    push(action) {
         this.actionQueue.push(action);
         this.tryToRunNextAction();
-    };
+    }
     /**
      * Continue with the next action (called when the current action is finished)
      * @return {?}
      */
-    NotifierQueueService.prototype.continue = function () {
+    continue() {
         this.isActionInProgress = false;
         this.tryToRunNextAction();
-    };
+    }
     /**
      * Try to run the next action in the queue; we skip if there already is some action in progress, or if there is no action left
      * @return {?}
      */
-    NotifierQueueService.prototype.tryToRunNextAction = function () {
+    tryToRunNextAction() {
         if (this.isActionInProgress || this.actionQueue.length === 0) {
             return; // Skip (the queue can now go drink a coffee as it has nothing to do anymore)
         }
         this.isActionInProgress = true;
         this.actionStream.next(this.actionQueue.shift()); // Push next action to the stream, and remove the current action from the queue
-    };
-    return NotifierQueueService;
-}());
+    }
+}
 NotifierQueueService.decorators = [
     { type: Injectable },
 ];
 /**
  * @nocollapse
  */
-NotifierQueueService.ctorParameters = function () { return []; };
+NotifierQueueService.ctorParameters = () => [];
 
 /**
  * Notifier configuration
@@ -91,14 +89,13 @@ NotifierQueueService.ctorParameters = function () { return []; };
  * configuration, which means that it only can be set once (at the beginning), and cannot be changed afterwards. Aligning to the world of
  * Angular, this configuration can be provided in the root app module - alternatively, a meaningful default configuration will be used.
  */
-var NotifierConfig = (function () {
+class NotifierConfig {
     /**
      * Constructor
      *
      * @param {?=} customOptions
      */
-    function NotifierConfig(customOptions) {
-        if (customOptions === void 0) { customOptions = {}; }
+    constructor(customOptions = {}) {
         // Set default values
         this.animations = {
             enabled: true,
@@ -173,8 +170,7 @@ var NotifierConfig = (function () {
             }
         }
     }
-    return NotifierConfig;
-}());
+}
 
 /**
  * Notifier service
@@ -183,14 +179,14 @@ var NotifierConfig = (function () {
  * block of an applications, it can be used to show new notifications, and hide existing ones. Internally, it transforms API calls into
  * actions, which then get thrown into the action queue - eventually being processed at the right moment.
  */
-var NotifierService = (function () {
+class NotifierService {
     /**
      * Constructor
      *
      * @param {?} notifierQueueService
      * @param {?} config
      */
-    function NotifierService(notifierQueueService, config // The forwardRef is (sadly) required here
+    constructor(notifierQueueService, config // The forwardRef is (sadly) required here
     ) {
         this.queueService = notifierQueueService;
         this.config = config;
@@ -200,60 +196,60 @@ var NotifierService = (function () {
      *
      * @return {?}
      */
-    NotifierService.prototype.getConfig = function () {
+    getConfig() {
         return this.config;
-    };
+    }
     /**
      * API: Show a new notification
      *
      * @param {?} notificationOptions
      * @return {?}
      */
-    NotifierService.prototype.show = function (notificationOptions) {
+    show(notificationOptions) {
         this.queueService.push({
             payload: notificationOptions,
             type: 'SHOW'
         });
-    };
+    }
     /**
      * API: Hide a specific notification, given its ID
      *
      * @param {?} notificationId
      * @return {?}
      */
-    NotifierService.prototype.hide = function (notificationId) {
+    hide(notificationId) {
         this.queueService.push({
             payload: notificationId,
             type: 'HIDE'
         });
-    };
+    }
     /**
      * API: Hide the newest notification
      * @return {?}
      */
-    NotifierService.prototype.hideNewest = function () {
+    hideNewest() {
         this.queueService.push({
             type: 'HIDE_NEWEST'
         });
-    };
+    }
     /**
      * API: Hide the oldest notification
      * @return {?}
      */
-    NotifierService.prototype.hideOldest = function () {
+    hideOldest() {
         this.queueService.push({
             type: 'HIDE_OLDEST'
         });
-    };
+    }
     /**
      * API: Hide all notifications at once
      * @return {?}
      */
-    NotifierService.prototype.hideAll = function () {
+    hideAll() {
         this.queueService.push({
             type: 'HIDE_ALL'
         });
-    };
+    }
     /**
      * API: Shortcut for showing a new notification
      *
@@ -262,28 +258,27 @@ var NotifierService = (function () {
      * @param {?=} notificationId
      * @return {?}
      */
-    NotifierService.prototype.notify = function (type, message, notificationId) {
-        var /** @type {?} */ notificationOptions = {
-            message: message,
-            type: type
+    notify(type, message, notificationId) {
+        let /** @type {?} */ notificationOptions = {
+            message,
+            type
         };
         if (notificationId !== undefined) {
             notificationOptions.id = notificationId;
         }
         this.show(notificationOptions);
-    };
-    return NotifierService;
-}());
+    }
+}
 NotifierService.decorators = [
     { type: Injectable },
 ];
 /**
  * @nocollapse
  */
-NotifierService.ctorParameters = function () { return [
+NotifierService.ctorParameters = () => [
     { type: NotifierQueueService, },
-    { type: NotifierConfig, decorators: [{ type: Inject, args: [forwardRef(function () { return NotifierConfigToken; }),] },] },
-]; };
+    { type: NotifierConfig, decorators: [{ type: Inject, args: [forwardRef(() => NotifierConfigToken),] },] },
+];
 
 /**
  * Notifier container component
@@ -298,7 +293,7 @@ NotifierService.ctorParameters = function () { return [
  * to not break the Angular AoT compilation. Moreover, this component (and also the notification components) set their change detection
  * strategy onPush, which means that we handle change detection manually in order to get the best performance. (#perfmatters)
  */
-var NotifierContainerComponent = (function () {
+class NotifierContainerComponent {
     /**
      * Constructor
      *
@@ -306,7 +301,7 @@ var NotifierContainerComponent = (function () {
      * @param {?} notifierQueueService
      * @param {?} notifierService
      */
-    function NotifierContainerComponent(changeDetector, notifierQueueService, notifierService) {
+    constructor(changeDetector, notifierQueueService, notifierService) {
         this.changeDetector = changeDetector;
         this.queueService = notifierQueueService;
         this.config = notifierService.getConfig();
@@ -316,23 +311,22 @@ var NotifierContainerComponent = (function () {
      * Component initialization lifecycle hook, connects this component to the action queue, and then handles incoming actions
      * @return {?}
      */
-    NotifierContainerComponent.prototype.ngOnInit = function () {
-        var _this = this;
-        this.queueServiceSubscription = this.queueService.actionStream.subscribe(function (action) {
-            _this.handleAction(action).then(function () {
-                _this.queueService.continue();
+    ngOnInit() {
+        this.queueServiceSubscription = this.queueService.actionStream.subscribe((action) => {
+            this.handleAction(action).then(() => {
+                this.queueService.continue();
             });
         });
-    };
+    }
     /**
      * Component destroyment lifecycle hook, cleans up the observable subsciption
      * @return {?}
      */
-    NotifierContainerComponent.prototype.ngOnDestroy = function () {
+    ngOnDestroy() {
         if (this.queueServiceSubscription) {
             this.queueServiceSubscription.unsubscribe();
         }
-    };
+    }
     /**
      * Notification identifier, used as the ngFor trackby function
      *
@@ -340,39 +334,39 @@ var NotifierContainerComponent = (function () {
      * @param {?} notification
      * @return {?}
      */
-    NotifierContainerComponent.prototype.identifyNotification = function (index, notification) {
+    identifyNotification(index, notification) {
         return notification.id;
-    };
+    }
     /**
      * Event handler, handles clicks on notification dismiss buttons
      *
      * @param {?} notificationId
      * @return {?}
      */
-    NotifierContainerComponent.prototype.onNotificationDismiss = function (notificationId) {
+    onNotificationDismiss(notificationId) {
         this.queueService.push({
             payload: notificationId,
             type: 'HIDE'
         });
-    };
+    }
     /**
      * Event handler, handles notification ready events
      *
      * @param {?} notificationComponent
      * @return {?}
      */
-    NotifierContainerComponent.prototype.onNotificationReady = function (notificationComponent) {
-        var /** @type {?} */ currentNotification = this.notifications[this.notifications.length - 1]; // Get the latest notification
+    onNotificationReady(notificationComponent) {
+        let /** @type {?} */ currentNotification = this.notifications[this.notifications.length - 1]; // Get the latest notification
         currentNotification.component = notificationComponent; // Save the new omponent reference
         this.continueHandleShowAction(currentNotification); // Continue with handling the show action
-    };
+    }
     /**
      * Handle incoming actions by mapping action types to methods, and then running them
      *
      * @param {?} action
      * @return {?}
      */
-    NotifierContainerComponent.prototype.handleAction = function (action) {
+    handleAction(action) {
         switch (action.type) {
             case 'SHOW':
                 return this.handleShowAction(action);
@@ -385,11 +379,11 @@ var NotifierContainerComponent = (function () {
             case 'HIDE_ALL':
                 return this.handleHideAllAction(action);
             default:
-                return new Promise(function (resolve, reject) {
+                return new Promise((resolve, reject) => {
                     resolve(); // Ignore unknown action types
                 });
         }
-    };
+    }
     /**
      * Show a new notification
      *
@@ -398,13 +392,12 @@ var NotifierContainerComponent = (function () {
      * @param {?} action
      * @return {?}
      */
-    NotifierContainerComponent.prototype.handleShowAction = function (action) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.tempPromiseResolver = resolve; // Save the promise resolve function so that it can be called later on by another method
-            _this.addNotificationToList(new NotifierNotification(action.payload));
+    handleShowAction(action) {
+        return new Promise((resolve, reject) => {
+            this.tempPromiseResolver = resolve; // Save the promise resolve function so that it can be called later on by another method
+            this.addNotificationToList(new NotifierNotification(action.payload));
         });
-    };
+    }
     /**
      * Continue to show a new notification (after the notification components is initialized / created / rendered).
      *
@@ -416,43 +409,42 @@ var NotifierContainerComponent = (function () {
      * @param {?} notification
      * @return {?}
      */
-    NotifierContainerComponent.prototype.continueHandleShowAction = function (notification) {
-        var _this = this;
+    continueHandleShowAction(notification) {
         // First (which means only one) notification in the list?
-        var /** @type {?} */ numberOfNotifications = this.notifications.length;
+        const /** @type {?} */ numberOfNotifications = this.notifications.length;
         if (numberOfNotifications === 1) {
             notification.component.show().then(this.tempPromiseResolver); // Done
         }
         else {
-            var /** @type {?} */ implicitStackingLimit = 2;
+            const /** @type {?} */ implicitStackingLimit = 2;
             // Stacking enabled? (stacking value below 2 means stacking is disabled)
             if (this.config.behaviour.stacking === false || this.config.behaviour.stacking < implicitStackingLimit) {
-                this.notifications[0].component.hide().then(function () {
-                    _this.removeNotificationFromList(_this.notifications[0]);
-                    notification.component.show().then(_this.tempPromiseResolver); // Done
+                this.notifications[0].component.hide().then(() => {
+                    this.removeNotificationFromList(this.notifications[0]);
+                    notification.component.show().then(this.tempPromiseResolver); // Done
                 });
             }
             else {
-                var /** @type {?} */ stepPromises_1 = [];
+                const /** @type {?} */ stepPromises = [];
                 // Are there now too many notifications?
                 if (numberOfNotifications > this.config.behaviour.stacking) {
-                    var /** @type {?} */ oldNotifications_1 = this.notifications.slice(1, numberOfNotifications - 1);
+                    const /** @type {?} */ oldNotifications = this.notifications.slice(1, numberOfNotifications - 1);
                     // Are animations enabled?
                     if (this.config.animations.enabled) {
                         // Is animation overlap enabled?
                         if (this.config.animations.overlap !== false && this.config.animations.overlap > 0) {
-                            stepPromises_1.push(this.notifications[0].component.hide());
-                            setTimeout(function () {
-                                stepPromises_1.push(_this.shiftNotifications(oldNotifications_1, notification.component.getHeight(), true));
+                            stepPromises.push(this.notifications[0].component.hide());
+                            setTimeout(() => {
+                                stepPromises.push(this.shiftNotifications(oldNotifications, notification.component.getHeight(), true));
                             }, this.config.animations.hide.speed - this.config.animations.overlap);
-                            setTimeout(function () {
-                                stepPromises_1.push(notification.component.show());
+                            setTimeout(() => {
+                                stepPromises.push(notification.component.show());
                             }, this.config.animations.hide.speed + this.config.animations.shift.speed - this.config.animations.overlap);
                         }
                         else {
-                            stepPromises_1.push(new Promise(function (resolve, reject) {
-                                _this.notifications[0].component.hide().then(function () {
-                                    _this.shiftNotifications(oldNotifications_1, notification.component.getHeight(), true).then(function () {
+                            stepPromises.push(new Promise((resolve, reject) => {
+                                this.notifications[0].component.hide().then(() => {
+                                    this.shiftNotifications(oldNotifications, notification.component.getHeight(), true).then(() => {
                                         notification.component.show().then(resolve);
                                     });
                                 });
@@ -460,44 +452,44 @@ var NotifierContainerComponent = (function () {
                         }
                     }
                     else {
-                        stepPromises_1.push(this.notifications[0].component.hide());
-                        stepPromises_1.push(this.shiftNotifications(oldNotifications_1, notification.component.getHeight(), true));
-                        stepPromises_1.push(notification.component.show());
+                        stepPromises.push(this.notifications[0].component.hide());
+                        stepPromises.push(this.shiftNotifications(oldNotifications, notification.component.getHeight(), true));
+                        stepPromises.push(notification.component.show());
                     }
                 }
                 else {
-                    var /** @type {?} */ oldNotifications_2 = this.notifications.slice(0, numberOfNotifications - 1);
+                    const /** @type {?} */ oldNotifications = this.notifications.slice(0, numberOfNotifications - 1);
                     // Are animations enabled?
                     if (this.config.animations.enabled) {
                         // Is animation overlap enabled?
                         if (this.config.animations.overlap !== false && this.config.animations.overlap > 0) {
-                            stepPromises_1.push(this.shiftNotifications(oldNotifications_2, notification.component.getHeight(), true));
-                            setTimeout(function () {
-                                stepPromises_1.push(notification.component.show());
+                            stepPromises.push(this.shiftNotifications(oldNotifications, notification.component.getHeight(), true));
+                            setTimeout(() => {
+                                stepPromises.push(notification.component.show());
                             }, this.config.animations.shift.speed - this.config.animations.overlap);
                         }
                         else {
-                            stepPromises_1.push(new Promise(function (resolve, reject) {
-                                _this.shiftNotifications(oldNotifications_2, notification.component.getHeight(), true).then(function () {
+                            stepPromises.push(new Promise((resolve, reject) => {
+                                this.shiftNotifications(oldNotifications, notification.component.getHeight(), true).then(() => {
                                     notification.component.show().then(resolve);
                                 });
                             }));
                         }
                     }
                     else {
-                        stepPromises_1.push(this.shiftNotifications(oldNotifications_2, notification.component.getHeight(), true));
-                        stepPromises_1.push(notification.component.show());
+                        stepPromises.push(this.shiftNotifications(oldNotifications, notification.component.getHeight(), true));
+                        stepPromises.push(notification.component.show());
                     }
                 }
-                Promise.all(stepPromises_1).then(function () {
-                    if (numberOfNotifications > _this.config.behaviour.stacking) {
-                        _this.removeNotificationFromList(_this.notifications[0]);
+                Promise.all(stepPromises).then(() => {
+                    if (numberOfNotifications > this.config.behaviour.stacking) {
+                        this.removeNotificationFromList(this.notifications[0]);
                     }
-                    _this.tempPromiseResolver();
+                    this.tempPromiseResolver();
                 }); // Done
             }
         }
-    };
+    }
     /**
      * Hide an existing notification
      *
@@ -508,65 +500,64 @@ var NotifierContainerComponent = (function () {
      * @param {?} action
      * @return {?}
      */
-    NotifierContainerComponent.prototype.handleHideAction = function (action) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var /** @type {?} */ stepPromises = [];
+    handleHideAction(action) {
+        return new Promise((resolve, reject) => {
+            const /** @type {?} */ stepPromises = [];
             // Does the notification exist / are there even any notifications? (let's prevent accidential errors)
-            var /** @type {?} */ notification = _this.findNotificationById(action.payload);
+            const /** @type {?} */ notification = this.findNotificationById(action.payload);
             if (notification === undefined) {
                 resolve();
                 return;
             }
             // Get older notifications
-            var /** @type {?} */ notificationIndex = _this.findNotificationIndexById(action.payload);
+            const /** @type {?} */ notificationIndex = this.findNotificationIndexById(action.payload);
             if (notificationIndex === undefined) {
                 resolve();
                 return;
             }
-            var /** @type {?} */ oldNotifications = _this.notifications.slice(0, notificationIndex);
+            const /** @type {?} */ oldNotifications = this.notifications.slice(0, notificationIndex);
             // Do older notifications exist, and thus do we need to shift other notifications as a consequence?
             if (oldNotifications.length > 0) {
                 // Are animations enabled?
-                if (_this.config.animations.enabled && _this.config.animations.hide.speed > 0) {
+                if (this.config.animations.enabled && this.config.animations.hide.speed > 0) {
                     // Is animation overlap enabled?
-                    if (_this.config.animations.overlap !== false && _this.config.animations.overlap > 0) {
+                    if (this.config.animations.overlap !== false && this.config.animations.overlap > 0) {
                         stepPromises.push(notification.component.hide());
-                        setTimeout(function () {
-                            stepPromises.push(_this.shiftNotifications(oldNotifications, notification.component.getHeight(), false));
-                        }, _this.config.animations.hide.speed - _this.config.animations.overlap);
+                        setTimeout(() => {
+                            stepPromises.push(this.shiftNotifications(oldNotifications, notification.component.getHeight(), false));
+                        }, this.config.animations.hide.speed - this.config.animations.overlap);
                     }
                     else {
-                        notification.component.hide().then(function () {
-                            stepPromises.push(_this.shiftNotifications(oldNotifications, notification.component.getHeight(), false));
+                        notification.component.hide().then(() => {
+                            stepPromises.push(this.shiftNotifications(oldNotifications, notification.component.getHeight(), false));
                         });
                     }
                 }
                 else {
                     stepPromises.push(notification.component.hide());
-                    stepPromises.push(_this.shiftNotifications(oldNotifications, notification.component.getHeight(), false));
+                    stepPromises.push(this.shiftNotifications(oldNotifications, notification.component.getHeight(), false));
                 }
             }
             else {
                 stepPromises.push(notification.component.hide());
             }
             // Wait until both hiding and shifting is done, then remove the notification from the list
-            Promise.all(stepPromises).then(function () {
-                _this.removeNotificationFromList(notification);
+            Promise.all(stepPromises).then(() => {
+                this.removeNotificationFromList(notification);
                 resolve(); // Done
             });
         });
-    };
+    }
     /**
      * Hide the oldest notification (bridge to handleHideAction)
      *
      * @param {?} action
      * @return {?}
      */
-    NotifierContainerComponent.prototype.handleHideOldestAction = function (action) {
+    handleHideOldestAction(action) {
         // Are there any notifications? (prevent accidential errors)
         if (this.notifications.length === 0) {
-            return new Promise(function (resolve, reject) {
+            return new Promise((resolve, reject) => {
                 resolve();
             }); // Done
         }
@@ -574,17 +565,17 @@ var NotifierContainerComponent = (function () {
             action.payload = this.notifications[0].id;
             return this.handleHideAction(action);
         }
-    };
+    }
     /**
      * Hide the newest notification (bridge to handleHideAction)
      *
      * @param {?} action
      * @return {?}
      */
-    NotifierContainerComponent.prototype.handleHideNewestAction = function (action) {
+    handleHideNewestAction(action) {
         // Are there any notifications? (prevent accidential errors)
         if (this.notifications.length === 0) {
-            return new Promise(function (resolve, reject) {
+            return new Promise((resolve, reject) => {
                 resolve();
             }); // Done
         }
@@ -592,54 +583,50 @@ var NotifierContainerComponent = (function () {
             action.payload = this.notifications[this.notifications.length - 1].id;
             return this.handleHideAction(action);
         }
-    };
+    }
     /**
      * Hide all notifications at once
      *
      * @param {?} action
      * @return {?}
      */
-    NotifierContainerComponent.prototype.handleHideAllAction = function (action) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    handleHideAllAction(action) {
+        return new Promise((resolve, reject) => {
             // Are there any notifications? (prevent accidential errors)
-            var /** @type {?} */ numberOfNotifications = _this.notifications.length;
+            const /** @type {?} */ numberOfNotifications = this.notifications.length;
             if (numberOfNotifications === 0) {
                 resolve(); // Done
                 return;
             }
             // Are animations enabled?
-            if (_this.config.animations.enabled && _this.config.animations.hide.speed > 0 && _this.config.animations.hide.offset !== false &&
-                _this.config.animations.hide.offset > 0) {
-                var _loop_1 = function (i) {
-                    var /** @type {?} */ animationOffset = _this.config.position.vertical.position === 'top' ? numberOfNotifications - 1 : i;
-                    setTimeout(function () {
-                        _this.notifications[i].component.hide().then(function () {
+            if (this.config.animations.enabled && this.config.animations.hide.speed > 0 && this.config.animations.hide.offset !== false &&
+                this.config.animations.hide.offset > 0) {
+                for (let /** @type {?} */ i = numberOfNotifications - 1; i >= 0; i--) {
+                    const /** @type {?} */ animationOffset = this.config.position.vertical.position === 'top' ? numberOfNotifications - 1 : i;
+                    setTimeout(() => {
+                        this.notifications[i].component.hide().then(() => {
                             // Are we done here, was this the last notification to be hidden?
-                            if ((_this.config.position.vertical.position === 'top' && i === 0) ||
-                                (_this.config.position.vertical.position === 'bottom' && i === numberOfNotifications - 1)) {
-                                _this.removeAllNotificationsFromList();
+                            if ((this.config.position.vertical.position === 'top' && i === 0) ||
+                                (this.config.position.vertical.position === 'bottom' && i === numberOfNotifications - 1)) {
+                                this.removeAllNotificationsFromList();
                                 resolve(); // Done
                             }
                         });
-                    }, _this.config.animations.hide.offset * animationOffset);
-                };
-                for (var /** @type {?} */ i = numberOfNotifications - 1; i >= 0; i--) {
-                    _loop_1(/** @type {?} */ i);
+                    }, this.config.animations.hide.offset * animationOffset);
                 }
             }
             else {
-                var /** @type {?} */ stepPromises = [];
-                for (var /** @type {?} */ i = numberOfNotifications - 1; i >= 0; i--) {
-                    stepPromises.push(_this.notifications[i].component.hide());
+                let /** @type {?} */ stepPromises = [];
+                for (let /** @type {?} */ i = numberOfNotifications - 1; i >= 0; i--) {
+                    stepPromises.push(this.notifications[i].component.hide());
                 }
-                Promise.all(stepPromises).then(function () {
-                    _this.removeAllNotificationsFromList();
+                Promise.all(stepPromises).then(() => {
+                    this.removeAllNotificationsFromList();
                     resolve(); // Done
                 });
             }
         });
-    };
+    }
     /**
      * Shift multiple notifications at once
      *
@@ -648,70 +635,69 @@ var NotifierContainerComponent = (function () {
      * @param {?} toMakePlace
      * @return {?}
      */
-    NotifierContainerComponent.prototype.shiftNotifications = function (notifications, distance, toMakePlace) {
-        return new Promise(function (resolve, reject) {
+    shiftNotifications(notifications, distance, toMakePlace) {
+        return new Promise((resolve, reject) => {
             // Are there any notifications to shift?
             if (notifications.length === 0) {
                 resolve();
                 return;
             }
-            var /** @type {?} */ notificationPromises = [];
-            for (var /** @type {?} */ i = notifications.length - 1; i >= 0; i--) {
+            let /** @type {?} */ notificationPromises = [];
+            for (let /** @type {?} */ i = notifications.length - 1; i >= 0; i--) {
                 notificationPromises.push(notifications[i].component.shift(distance, toMakePlace));
             }
             Promise.all(notificationPromises).then(resolve); // Done
         });
-    };
+    }
     /**
      * Add a new notification to the list of notifications (triggers change detection)
      *
      * @param {?} notification
      * @return {?}
      */
-    NotifierContainerComponent.prototype.addNotificationToList = function (notification) {
+    addNotificationToList(notification) {
         this.notifications.push(notification);
         this.changeDetector.markForCheck(); // Run change detection because the notification list changed
-    };
+    }
     /**
      * Remove an existing notification from the list of notifications (triggers change detection)
      *
      * @param {?} notification
      * @return {?}
      */
-    NotifierContainerComponent.prototype.removeNotificationFromList = function (notification) {
+    removeNotificationFromList(notification) {
         this.notifications =
-            this.notifications.filter(function (item) { return item.component !== notification.component; });
+            this.notifications.filter((item) => item.component !== notification.component);
         this.changeDetector.markForCheck(); // Run change detection because the notification list changed
-    };
+    }
     /**
      * Remove all notifications from the list (triggers change detection)
      * @return {?}
      */
-    NotifierContainerComponent.prototype.removeAllNotificationsFromList = function () {
+    removeAllNotificationsFromList() {
         this.notifications = [];
         this.changeDetector.markForCheck(); // Run change detection because the notification list changed
-    };
+    }
     /**
      * Helper: Find a notification in the notification list by a given notification ID
      *
      * @param {?} notificationId
      * @return {?}
      */
-    NotifierContainerComponent.prototype.findNotificationById = function (notificationId) {
-        return this.notifications.find(function (currentNotification) { return currentNotification.id === notificationId; });
-    };
+    findNotificationById(notificationId) {
+        return this.notifications.find((currentNotification) => currentNotification.id === notificationId);
+    }
     /**
      * Helper: Find a notification's index by a given notification ID
      *
      * @param {?} notificationId
      * @return {?}
      */
-    NotifierContainerComponent.prototype.findNotificationIndexById = function (notificationId) {
-        var /** @type {?} */ notificationIndex = this.notifications.findIndex(function (currentNotification) { return currentNotification.id === notificationId; });
+    findNotificationIndexById(notificationId) {
+        const /** @type {?} */ notificationIndex = this.notifications.findIndex((currentNotification) => currentNotification.id === notificationId);
         return (notificationIndex !== -1 ? notificationIndex : undefined);
-    };
-    return NotifierContainerComponent;
-}());
+    }
+}
 NotifierContainerComponent.decorators = [
     { type: Component, args: [{
                 changeDetection: ChangeDetectionStrategy.OnPush,
@@ -719,23 +705,23 @@ NotifierContainerComponent.decorators = [
                     class: 'notifier__container'
                 },
                 selector: 'notifier-container',
-                template: "<ul><li *ngFor=\"let notification of notifications; trackBy: identifyNotification;\" class=\"notifier__container-list\"><notifier-notification (dismiss)=\"onNotificationDismiss( $event )\" (ready)=\"onNotificationReady( $event )\" [notification]=\"notification\"></notifier-notification></ul>"
+                template: `<ul><li *ngFor="let notification of notifications; trackBy: identifyNotification;" class="notifier__container-list"><notifier-notification (dismiss)="onNotificationDismiss( $event )" (ready)="onNotificationReady( $event )" [notification]="notification"></notifier-notification></ul>`
             },] },
 ];
 /**
  * @nocollapse
  */
-NotifierContainerComponent.ctorParameters = function () { return [
+NotifierContainerComponent.ctorParameters = () => [
     { type: ChangeDetectorRef, },
     { type: NotifierQueueService, },
     { type: NotifierService, },
-]; };
+];
 
 /**
  * Fade animation preset
  */
-var fade = {
-    hide: function (notification) {
+const fade = {
+    hide: (notification) => {
         return {
             from: {
                 opacity: '1'
@@ -745,7 +731,7 @@ var fade = {
             }
         };
     },
-    show: function (notification) {
+    show: (notification) => {
         return {
             from: {
                 opacity: '0'
@@ -760,60 +746,60 @@ var fade = {
 /**
  * Slide animation preset
  */
-var slide = {
-    hide: function (notification) {
+const slide = {
+    hide: (notification) => {
         // Prepare variables
-        var config = notification.component.getConfig();
-        var shift = notification.component.getShift();
-        var from;
-        var to;
+        const config = notification.component.getConfig();
+        const shift = notification.component.getShift();
+        let from;
+        let to;
         // Configure variables, depending on configuration and component
         if (config.position.horizontal.position === 'left') {
             from = {
-                transform: "translate3d( 0, " + shift + "px, 0 )"
+                transform: `translate3d( 0, ${shift}px, 0 )`
             };
             to = {
-                transform: "translate3d( calc( -100% - " + config.position.horizontal.distance + "px - 10px ), " + shift + "px, 0 )"
+                transform: `translate3d( calc( -100% - ${config.position.horizontal.distance}px - 10px ), ${shift}px, 0 )`
             };
         }
         else if (config.position.horizontal.position === 'right') {
             from = {
-                transform: "translate3d( 0, " + shift + "px, 0 )"
+                transform: `translate3d( 0, ${shift}px, 0 )`
             };
             to = {
-                transform: "translate3d( calc( 100% + " + config.position.horizontal.distance + "px + 10px ), " + shift + "px, 0 )"
+                transform: `translate3d( calc( 100% + ${config.position.horizontal.distance}px + 10px ), ${shift}px, 0 )`
             };
         }
         else {
-            var horizontalPosition = void 0;
+            let horizontalPosition;
             if (config.position.vertical.position === 'top') {
-                horizontalPosition = "calc( -100% - " + config.position.horizontal.distance + "px - 10px )";
+                horizontalPosition = `calc( -100% - ${config.position.horizontal.distance}px - 10px )`;
             }
             else {
-                horizontalPosition = "calc( 100% + " + config.position.horizontal.distance + "px + 10px )";
+                horizontalPosition = `calc( 100% + ${config.position.horizontal.distance}px + 10px )`;
             }
             from = {
-                transform: "translate3d( -50%, " + shift + "px, 0 )"
+                transform: `translate3d( -50%, ${shift}px, 0 )`
             };
             to = {
-                transform: "translate3d( -50%, " + horizontalPosition + ", 0 )"
+                transform: `translate3d( -50%, ${horizontalPosition}, 0 )`
             };
         }
         // Done
         return {
-            from: from,
-            to: to
+            from,
+            to
         };
     },
-    show: function (notification) {
+    show: (notification) => {
         // Prepare variables
-        var config = notification.component.getConfig();
-        var from;
-        var to;
+        const config = notification.component.getConfig();
+        let from;
+        let to;
         // Configure variables, depending on configuration and component
         if (config.position.horizontal.position === 'left') {
             from = {
-                transform: "translate3d( calc( -100% - " + config.position.horizontal.distance + "px - 10px ), 0, 0 )"
+                transform: `translate3d( calc( -100% - ${config.position.horizontal.distance}px - 10px ), 0, 0 )`
             };
             to = {
                 transform: 'translate3d( 0, 0, 0 )'
@@ -821,22 +807,22 @@ var slide = {
         }
         else if (config.position.horizontal.position === 'right') {
             from = {
-                transform: "translate3d( calc( 100% + " + config.position.horizontal.distance + "px + 10px ), 0, 0 )"
+                transform: `translate3d( calc( 100% + ${config.position.horizontal.distance}px + 10px ), 0, 0 )`
             };
             to = {
                 transform: 'translate3d( 0, 0, 0 )'
             };
         }
         else {
-            var horizontalPosition = void 0;
+            let horizontalPosition;
             if (config.position.vertical.position === 'top') {
-                horizontalPosition = "calc( -100% - " + config.position.horizontal.distance + "px - 10px )";
+                horizontalPosition = `calc( -100% - ${config.position.horizontal.distance}px - 10px )`;
             }
             else {
-                horizontalPosition = "calc( 100% + " + config.position.horizontal.distance + "px + 10px )";
+                horizontalPosition = `calc( 100% + ${config.position.horizontal.distance}px + 10px )`;
             }
             from = {
-                transform: "translate3d( -50%, " + horizontalPosition + ", 0 )"
+                transform: `translate3d( -50%, ${horizontalPosition}, 0 )`
             };
             to = {
                 transform: 'translate3d( -50%, 0, 0 )'
@@ -844,8 +830,8 @@ var slide = {
         }
         // Done
         return {
-            from: from,
-            to: to
+            from,
+            to
         };
     }
 };
@@ -853,14 +839,14 @@ var slide = {
 /**
  * Notifier animation service
  */
-var NotifierAnimationService = (function () {
+class NotifierAnimationService {
     /**
      * Constructor
      */
-    function NotifierAnimationService() {
+    constructor() {
         this.animationPresets = {
-            fade: fade,
-            slide: slide
+            fade,
+            slide
         };
     }
     /**
@@ -873,11 +859,11 @@ var NotifierAnimationService = (function () {
      * @param {?} notification
      * @return {?}
      */
-    NotifierAnimationService.prototype.getAnimationData = function (direction, notification) {
+    getAnimationData(direction, notification) {
         // Get all necessary animation data
-        var /** @type {?} */ keyframes;
-        var /** @type {?} */ duration;
-        var /** @type {?} */ easing;
+        let /** @type {?} */ keyframes;
+        let /** @type {?} */ duration;
+        let /** @type {?} */ easing;
         if (direction === 'show') {
             keyframes = this.animationPresets[notification.component.getConfig().animations.show.preset].show(notification);
             duration = notification.component.getConfig().animations.show.speed;
@@ -895,21 +881,20 @@ var NotifierAnimationService = (function () {
                 keyframes.to
             ],
             options: {
-                duration: duration,
-                easing: easing,
+                duration,
+                easing,
                 fill: 'forwards' // Keep the newly painted state after the animation finished
             }
         };
-    };
-    return NotifierAnimationService;
-}());
+    }
+}
 NotifierAnimationService.decorators = [
     { type: Injectable },
 ];
 /**
  * @nocollapse
  */
-NotifierAnimationService.ctorParameters = function () { return []; };
+NotifierAnimationService.ctorParameters = () => [];
 
 /**
  * Notifier timer service
@@ -917,11 +902,11 @@ NotifierAnimationService.ctorParameters = function () { return []; };
  * This service acts as a timer, needed due to the still rather limited setTimeout JavaScript API. The timer service can start and stop a
  * timer. Furthermore, it can also pause the timer at any time, and resume later on. The timer API workd promise-based.
  */
-var NotifierTimerService = (function () {
+class NotifierTimerService {
     /**
      * Constructor
      */
-    function NotifierTimerService() {
+    constructor() {
         this.now = 0;
         this.remaining = 0;
     }
@@ -931,59 +916,56 @@ var NotifierTimerService = (function () {
      * @param {?} duration
      * @return {?}
      */
-    NotifierTimerService.prototype.start = function (duration) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    start(duration) {
+        return new Promise((resolve, reject) => {
             // For the first run ...
-            _this.remaining = duration;
+            this.remaining = duration;
             // Setup, then start the timer
-            _this.finishPromiseResolver = resolve;
-            _this.continue();
+            this.finishPromiseResolver = resolve;
+            this.continue();
         });
-    };
+    }
     /**
      * Pause the timer
      * @return {?}
      */
-    NotifierTimerService.prototype.pause = function () {
+    pause() {
         clearTimeout(this.timerId);
         this.remaining -= new Date().getTime() - this.now;
-    };
+    }
     /**
      * Continue the timer
      * @return {?}
      */
-    NotifierTimerService.prototype.continue = function () {
-        var _this = this;
+    continue() {
         this.now = new Date().getTime();
-        this.timerId = setTimeout(function () {
-            _this.finish();
+        this.timerId = setTimeout(() => {
+            this.finish();
         }, this.remaining);
-    };
+    }
     /**
      * Stop the timer
      * @return {?}
      */
-    NotifierTimerService.prototype.stop = function () {
+    stop() {
         clearTimeout(this.timerId);
         this.remaining = 0;
-    };
+    }
     /**
      * Finish up the timeout by resolving the timer promise
      * @return {?}
      */
-    NotifierTimerService.prototype.finish = function () {
+    finish() {
         this.finishPromiseResolver();
-    };
-    return NotifierTimerService;
-}());
+    }
+}
 NotifierTimerService.decorators = [
     { type: Injectable },
 ];
 /**
  * @nocollapse
  */
-NotifierTimerService.ctorParameters = function () { return []; };
+NotifierTimerService.ctorParameters = () => [];
 
 /**
  * Notifier notification component
@@ -993,7 +975,7 @@ NotifierTimerService.ctorParameters = function () { return []; };
  * Furthermore, the notification component handles all interactions the user has with this notification / component, such as clicks and
  * mouse movements.
  */
-var NotifierNotificationComponent = (function () {
+class NotifierNotificationComponent {
     /**
      * Constructor
      *
@@ -1003,7 +985,7 @@ var NotifierNotificationComponent = (function () {
      * @param {?} notifierTimerService
      * @param {?} notifierAnimationService
      */
-    function NotifierNotificationComponent(elementRef, renderer, notifierService, notifierTimerService, notifierAnimationService) {
+    constructor(elementRef, renderer, notifierService, notifierTimerService, notifierAnimationService) {
         this.config = notifierService.getConfig();
         this.ready = new EventEmitter();
         this.dismiss = new EventEmitter();
@@ -1017,91 +999,89 @@ var NotifierNotificationComponent = (function () {
      * Component after view init lifecycle hook, setts up the component and then emits the ready event
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.ngAfterViewInit = function () {
+    ngAfterViewInit() {
         this.setup();
         this.elementHeight = this.element.offsetHeight;
         this.elementWidth = this.element.offsetWidth;
         this.ready.emit(this);
-    };
+    }
     /**
      * Get the notifier config
      *
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.getConfig = function () {
+    getConfig() {
         return this.config;
-    };
+    }
     /**
      * Get notification element height (in px)
      *
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.getHeight = function () {
+    getHeight() {
         return this.elementHeight;
-    };
+    }
     /**
      * Get notification element width (in px)
      *
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.getWidth = function () {
+    getWidth() {
         return this.elementWidth;
-    };
+    }
     /**
      * Get notification shift offset (in px)
      *
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.getShift = function () {
+    getShift() {
         return this.elementShift;
-    };
+    }
     /**
      * Show (animate in) this notification
      *
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.show = function () {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    show() {
+        return new Promise((resolve, reject) => {
             // Are animations enabled?
-            if (_this.config.animations.enabled && _this.config.animations.show.speed > 0) {
+            if (this.config.animations.enabled && this.config.animations.show.speed > 0) {
                 // Get animation data
-                var /** @type {?} */ animationData = _this.animationService.getAnimationData('show', _this.notification);
+                const /** @type {?} */ animationData = this.animationService.getAnimationData('show', this.notification);
                 // Set initial styles (styles before animation), prevents quick flicker when animation starts
-                var /** @type {?} */ animatedProperties = Object.keys(animationData.keyframes[0]);
-                for (var /** @type {?} */ i = animatedProperties.length - 1; i >= 0; i--) {
-                    _this.renderer.setStyle(_this.element, animatedProperties[i], animationData.keyframes[0][animatedProperties[i]]);
+                const /** @type {?} */ animatedProperties = Object.keys(animationData.keyframes[0]);
+                for (let /** @type {?} */ i = animatedProperties.length - 1; i >= 0; i--) {
+                    this.renderer.setStyle(this.element, animatedProperties[i], animationData.keyframes[0][animatedProperties[i]]);
                 }
                 // Animate notification in
-                _this.renderer.setStyle(_this.element, 'visibility', 'visible');
-                var /** @type {?} */ animation = _this.element.animate(animationData.keyframes, animationData.options);
-                animation.onfinish = function () {
-                    _this.startAutoHideTimer();
+                this.renderer.setStyle(this.element, 'visibility', 'visible');
+                const /** @type {?} */ animation = this.element.animate(animationData.keyframes, animationData.options);
+                animation.onfinish = () => {
+                    this.startAutoHideTimer();
                     resolve(); // Done
                 };
             }
             else {
                 // Show notification
-                _this.renderer.setStyle(_this.element, 'visibility', 'visible');
-                _this.startAutoHideTimer();
+                this.renderer.setStyle(this.element, 'visibility', 'visible');
+                this.startAutoHideTimer();
                 resolve(); // Done
             }
         });
-    };
+    }
     /**
      * Hide (animate out) this notification
      *
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.hide = function () {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.stopAutoHideTimer();
+    hide() {
+        return new Promise((resolve, reject) => {
+            this.stopAutoHideTimer();
             // Are animations enabled?
-            if (_this.config.animations.enabled && _this.config.animations.hide.speed > 0) {
-                var /** @type {?} */ animationData = _this.animationService.getAnimationData('hide', _this.notification);
-                var /** @type {?} */ animation = _this.element.animate(animationData.keyframes, animationData.options);
-                animation.onfinish = function () {
+            if (this.config.animations.enabled && this.config.animations.hide.speed > 0) {
+                const /** @type {?} */ animationData = this.animationService.getAnimationData('hide', this.notification);
+                const /** @type {?} */ animation = this.element.animate(animationData.keyframes, animationData.options);
+                animation.onfinish = () => {
                     resolve(); // Done
                 };
             }
@@ -1109,7 +1089,7 @@ var NotifierNotificationComponent = (function () {
                 resolve(); // Done
             }
         });
-    };
+    }
     /**
      * Shift (move) this notification
      *
@@ -1117,139 +1097,137 @@ var NotifierNotificationComponent = (function () {
      * @param {?} shiftToMakePlace
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.shift = function (distance, shiftToMakePlace) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    shift(distance, shiftToMakePlace) {
+        return new Promise((resolve, reject) => {
             // Calculate new position (position after the shift)
-            var /** @type {?} */ newElementShift;
-            if ((_this.config.position.vertical.position === 'top' && shiftToMakePlace)
-                || (_this.config.position.vertical.position === 'bottom' && !shiftToMakePlace)) {
-                newElementShift = _this.elementShift + distance + _this.config.position.vertical.gap;
+            let /** @type {?} */ newElementShift;
+            if ((this.config.position.vertical.position === 'top' && shiftToMakePlace)
+                || (this.config.position.vertical.position === 'bottom' && !shiftToMakePlace)) {
+                newElementShift = this.elementShift + distance + this.config.position.vertical.gap;
             }
             else {
-                newElementShift = _this.elementShift - distance - _this.config.position.vertical.gap;
+                newElementShift = this.elementShift - distance - this.config.position.vertical.gap;
             }
-            var /** @type {?} */ horizontalPosition = _this.config.position.horizontal.position === 'middle' ? '-50%' : '0';
+            const /** @type {?} */ horizontalPosition = this.config.position.horizontal.position === 'middle' ? '-50%' : '0';
             // Are animations enabled?
-            if (_this.config.animations.enabled && _this.config.animations.shift.speed > 0) {
-                var /** @type {?} */ animationData = {
+            if (this.config.animations.enabled && this.config.animations.shift.speed > 0) {
+                const /** @type {?} */ animationData = {
                     keyframes: [
                         {
-                            transform: "translate3d( " + horizontalPosition + ", " + _this.elementShift + "px, 0 )"
+                            transform: `translate3d( ${horizontalPosition}, ${this.elementShift}px, 0 )`
                         },
                         {
-                            transform: "translate3d( " + horizontalPosition + ", " + newElementShift + "px, 0 )"
+                            transform: `translate3d( ${horizontalPosition}, ${newElementShift}px, 0 )`
                         }
                     ],
                     options: {
-                        duration: _this.config.animations.shift.speed,
-                        easing: _this.config.animations.shift.easing,
+                        duration: this.config.animations.shift.speed,
+                        easing: this.config.animations.shift.easing,
                         fill: 'forwards'
                     }
                 };
-                _this.elementShift = newElementShift;
-                var /** @type {?} */ animation = _this.element.animate(animationData.keyframes, animationData.options);
-                animation.onfinish = function () {
+                this.elementShift = newElementShift;
+                const /** @type {?} */ animation = this.element.animate(animationData.keyframes, animationData.options);
+                animation.onfinish = () => {
                     resolve(); // Done
                 };
             }
             else {
-                _this.renderer.setStyle(_this.element, 'transform', "translate3d( " + horizontalPosition + ", " + newElementShift + "px, 0 )");
-                _this.elementShift = newElementShift;
+                this.renderer.setStyle(this.element, 'transform', `translate3d( ${horizontalPosition}, ${newElementShift}px, 0 )`);
+                this.elementShift = newElementShift;
                 resolve(); // Done
             }
         });
-    };
+    }
     /**
      * Handle click on dismiss button
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.onClickDismiss = function () {
+    onClickDismiss() {
         this.dismiss.emit(this.notification.id);
-    };
+    }
     /**
      * Handle mouseover over notification area
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.onNotificationMouseover = function () {
+    onNotificationMouseover() {
         if (this.config.behaviour.onMouseover === 'pauseAutoHide') {
             this.pauseAutoHideTimer();
         }
         else if (this.config.behaviour.onMouseover === 'resetAutoHide') {
             this.stopAutoHideTimer();
         }
-    };
+    }
     /**
      * Handle mouseout from notification area
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.onNotificationMouseout = function () {
+    onNotificationMouseout() {
         if (this.config.behaviour.onMouseover === 'pauseAutoHide') {
             this.continueAutoHideTimer();
         }
         else if (this.config.behaviour.onMouseover === 'resetAutoHide') {
             this.startAutoHideTimer();
         }
-    };
+    }
     /**
      * Handle click on notification area
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.onNotificationClick = function () {
+    onNotificationClick() {
         if (this.config.behaviour.onClick === 'hide') {
             this.onClickDismiss();
         }
-    };
+    }
     /**
      * Start the auto hide timer (if enabled)
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.startAutoHideTimer = function () {
-        var _this = this;
+    startAutoHideTimer() {
         if (this.config.behaviour.autoHide !== false && this.config.behaviour.autoHide > 0) {
-            this.timerService.start(this.config.behaviour.autoHide).then(function () {
-                _this.onClickDismiss();
+            this.timerService.start(this.config.behaviour.autoHide).then(() => {
+                this.onClickDismiss();
             });
         }
-    };
+    }
     /**
      * Pause the auto hide timer (if enabled)
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.pauseAutoHideTimer = function () {
+    pauseAutoHideTimer() {
         if (this.config.behaviour.autoHide !== false && this.config.behaviour.autoHide > 0) {
             this.timerService.pause();
         }
-    };
+    }
     /**
      * Continue the auto hide timer (if enabled)
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.continueAutoHideTimer = function () {
+    continueAutoHideTimer() {
         if (this.config.behaviour.autoHide !== false && this.config.behaviour.autoHide > 0) {
             this.timerService.continue();
         }
-    };
+    }
     /**
      * Stop the auto hide timer (if enabled)
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.stopAutoHideTimer = function () {
+    stopAutoHideTimer() {
         if (this.config.behaviour.autoHide !== false && this.config.behaviour.autoHide > 0) {
             this.timerService.stop();
         }
-    };
+    }
     /**
      * Initial notification setup
      * @return {?}
      */
-    NotifierNotificationComponent.prototype.setup = function () {
+    setup() {
         // Set start position (initially the exact same for every new notification)
         if (this.config.position.horizontal.position === 'left') {
-            this.renderer.setStyle(this.element, 'left', this.config.position.horizontal.distance + "px");
+            this.renderer.setStyle(this.element, 'left', `${this.config.position.horizontal.distance}px`);
         }
         else if (this.config.position.horizontal.position === 'right') {
-            this.renderer.setStyle(this.element, 'right', this.config.position.horizontal.distance + "px");
+            this.renderer.setStyle(this.element, 'right', `${this.config.position.horizontal.distance}px`);
         }
         else {
             this.renderer.setStyle(this.element, 'left', '50%');
@@ -1257,17 +1235,16 @@ var NotifierNotificationComponent = (function () {
             this.renderer.setStyle(this.element, 'transform', 'translate3d( -50%, 0, 0 )');
         }
         if (this.config.position.vertical.position === 'top') {
-            this.renderer.setStyle(this.element, 'top', this.config.position.vertical.distance + "px");
+            this.renderer.setStyle(this.element, 'top', `${this.config.position.vertical.distance}px`);
         }
         else {
-            this.renderer.setStyle(this.element, 'bottom', this.config.position.vertical.distance + "px");
+            this.renderer.setStyle(this.element, 'bottom', `${this.config.position.vertical.distance}px`);
         }
         // Add classes (responsible for visual design)
-        this.renderer.addClass(this.element, "notifier__notification--" + this.notification.type);
-        this.renderer.addClass(this.element, "notifier__notification--" + this.config.theme);
-    };
-    return NotifierNotificationComponent;
-}());
+        this.renderer.addClass(this.element, `notifier__notification--${this.notification.type}`);
+        this.renderer.addClass(this.element, `notifier__notification--${this.config.theme}`);
+    }
+}
 NotifierNotificationComponent.decorators = [
     { type: Component, args: [{
                 changeDetection: ChangeDetectionStrategy.OnPush,
@@ -1283,19 +1260,19 @@ NotifierNotificationComponent.decorators = [
                     NotifierTimerService
                 ],
                 selector: 'notifier-notification',
-                template: "<div class=\"notifier__notification-message\" [innerHTML]=\"notification.message\"></div><button class=\"notifier__notification-button\" type=\"button\" title=\"dismiss\" *ngIf=\"config.behaviour.showDismissButton\" (click)=\"onClickDismiss()\"><svg class=\"notifier__notification-button-icon\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\"><path d=\"M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z\"/></svg></button>"
+                template: `<div class="notifier-header"><button class="notifier__notification-button" type="button" title="dismiss" *ngIf="config.behaviour.showDismissButton" (click)="onClickDismiss()"><svg class="notifier__notification-button-icon" viewBox="0 0 24 24" width="20" height="20"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div><div class="notifier__notification-message" [innerHTML]="notification.message"></div>`
             },] },
 ];
 /**
  * @nocollapse
  */
-NotifierNotificationComponent.ctorParameters = function () { return [
+NotifierNotificationComponent.ctorParameters = () => [
     { type: ElementRef, },
     { type: Renderer2, },
     { type: NotifierService, },
     { type: NotifierTimerService, },
     { type: NotifierAnimationService, },
-]; };
+];
 NotifierNotificationComponent.propDecorators = {
     'notification': [{ type: Input },],
     'ready': [{ type: Output },],
@@ -1305,11 +1282,11 @@ NotifierNotificationComponent.propDecorators = {
 /**
  * Injection Token for notifier options
  */
-var NotifierOptionsToken = new InjectionToken('[angular-notifier] Notifier Options');
+const NotifierOptionsToken = new InjectionToken('[angular-notifier] Notifier Options');
 /**
  * Injection Token for notifier configuration
  */
-var NotifierConfigToken = new InjectionToken('[anuglar-notifier] Notifier Config');
+const NotifierConfigToken = new InjectionToken('[anuglar-notifier] Notifier Config');
 /**
  * Factory for a notifier configuration with custom options
  *
@@ -1336,17 +1313,14 @@ function notifierDefaultConfigFactory() {
 /**
  * Notifier module
  */
-var NotifierModule = (function () {
-    function NotifierModule() {
-    }
+class NotifierModule {
     /**
      * Setup the notifier module with custom providers, in this case with a custom configuration based on the givne options
      *
      * @param {?=} options
      * @return {?}
      */
-    NotifierModule.withConfig = function (options) {
-        if (options === void 0) { options = {}; }
+    static withConfig(options = {}) {
         return {
             ngModule: NotifierModule,
             providers: [
@@ -1365,9 +1339,8 @@ var NotifierModule = (function () {
                 }
             ]
         };
-    };
-    return NotifierModule;
-}());
+    }
+}
 NotifierModule.decorators = [
     { type: NgModule, args: [{
                 declarations: [
@@ -1395,7 +1368,7 @@ NotifierModule.decorators = [
 /**
  * @nocollapse
  */
-NotifierModule.ctorParameters = function () { return []; };
+NotifierModule.ctorParameters = () => [];
 
 /**
  * Generated bundle index. Do not edit.
@@ -1403,4 +1376,4 @@ NotifierModule.ctorParameters = function () { return []; };
 
 export { NotifierModule, NotifierService, NotifierContainerComponent as ɵf, NotifierNotificationComponent as ɵh, NotifierConfig as ɵe, NotifierConfigToken as ɵb, NotifierOptionsToken as ɵa, notifierCustomConfigFactory as ɵc, notifierDefaultConfigFactory as ɵd, NotifierAnimationService as ɵj, NotifierQueueService as ɵg, NotifierTimerService as ɵi };
 
-//# sourceMappingURL=angular-notifier.es5.js.map
+//# sourceMappingURL=angular-notifier.js.map
