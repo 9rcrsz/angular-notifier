@@ -1,0 +1,1 @@
+{"version":3,"sources":["type-default.css"],"names":[],"mappings":"AAAA;EACE,uBAAuB;EACvB,YAAY;CACb;;AAED;EACE,WAAW;CACZ","file":"type-default.css","sourcesContent":[".notifier__notification--default {\n  background-color: #444;\n  color: #FFF;\n}\n\n.notifier__notification--default .notifier__notification-button-icon {\n  fill: #FFF;\n}\n"]}

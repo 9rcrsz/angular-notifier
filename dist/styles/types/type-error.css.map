@@ -1,0 +1,1 @@
+{"version":3,"sources":["type-error.css"],"names":[],"mappings":"AAAA;EACE,0BAA0B;EAC1B,YAAY;CACb;;AAED;EACE,WAAW;CACZ","file":"type-error.css","sourcesContent":[".notifier__notification--error {\n  background-color: #D9534F;\n  color: #FFF;\n}\n\n.notifier__notification--error .notifier__notification-button-icon {\n  fill: #FFF;\n}\n"]}
